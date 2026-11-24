@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Unemployed - Notepad</title>
     <!-- Favicon using the custom SVG -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23999' d='M22 6H8v20h16V6z'/%3E%3Cpath fill='%23fff' d='M20 8H10v16h12V8z'/%3E%3Cpath fill='%23000' d='M24 4H10v20h16V4z'/%3E%3Cpath fill='%23fff' d='M22 6H12v16h12V6z'/%3E%3Cpath fill='%23000' d='M26 8H12v20h16V8z'/%3E%3Cpath fill='%23fff' d='M24 10H14v16h12V10z'/%3E%3Cpath fill='%23000' d='M26 8V6h-2v2h2z'/%3E%3Cpath fill='%23999' d='M24 8V6h-2v2h2z'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M7 3H21L27 9V27a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z%22 fill=%22%23fff3a8%22 stroke=%22%23a8821a%22 stroke-width=%221.4%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M21 3V9H27z%22 fill=%22%23e6c84f%22 stroke=%22%23a8821a%22 stroke-width=%221.4%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M9 14H23M9 18.5H23M9 23H18%22 stroke=%22%237a6420%22 stroke-width=%221.6%22 stroke-linecap=%22round%22 fill=%22none%22/%3E%3C/svg%3E">
     <style>
         /* Base Reset */
         * {
@@ -83,7 +83,6 @@
             width: 16px;
             height: 16px;
             margin-right: 6px;
-            image-rendering: pixelated;
             flex-shrink: 0;
         }
 
@@ -425,22 +424,18 @@
 </head>
 <body>
 
+    <!-- App icon, defined once and reused with <use> -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="appIcon" viewBox="0 0 32 32"><path d="M7 3H21L27 9V27a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="#fff3a8" stroke="#a8821a" stroke-width="1.4" stroke-linejoin="round"/><path d="M21 3V9H27z" fill="#e6c84f" stroke="#a8821a" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 14H23M9 18.5H23M9 23H18" stroke="#7a6420" stroke-width="1.6" stroke-linecap="round" fill="none"/></symbol>
+    </svg>
+
     <input type="file" id="fileInput" accept=".txt" style="display: none;">
 
     <div class="window" id="mainWindow">
         <!-- Title Bar -->
         <div class="title-bar" id="dragWindow">
             <div class="title-bar-text" id="windowTitle">
-                <svg class="title-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#999" d="M22 6H8v20h16V6z"/>
-                    <path fill="#fff" d="M20 8H10v16h12V8z"/>
-                    <path fill="#000" d="M24 4H10v20h16V4z"/>
-                    <path fill="#fff" d="M22 6H12v16h12V6z"/>
-                    <path fill="#000" d="M26 8H12v20h16V8z"/>
-                    <path fill="#fff" d="M24 10H14v16h12V10z"/>
-                    <path fill="#000" d="M26 8V6h-2v2h2z"/>
-                    <path fill="#999" d="M24 8V6h-2v2h2z"/>
-                </svg>
+                <svg class="title-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><use href="#appIcon"/></svg>
                 Untitled - Notepad
             </div>
             <div class="window-controls">
@@ -844,16 +839,7 @@
 
         function updateTitle(filename) {
             windowTitle.innerHTML = `
-                <svg class="title-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#999" d="M22 6H8v20h16V6z"/>
-                    <path fill="#fff" d="M20 8H10v16h12V8z"/>
-                    <path fill="#000" d="M24 4H10v20h16V4z"/>
-                    <path fill="#fff" d="M22 6H12v16h12V6z"/>
-                    <path fill="#000" d="M26 8H12v20h16V8z"/>
-                    <path fill="#fff" d="M24 10H14v16h12V10z"/>
-                    <path fill="#000" d="M26 8V6h-2v2h2z"/>
-                    <path fill="#999" d="M24 8V6h-2v2h2z"/>
-                </svg>
+                <svg class="title-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><use href="#appIcon"/></svg>
                 ${filename} - Notepad`;
         }
 
