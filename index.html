@@ -304,6 +304,36 @@
         }
         
         .dialog-buttons button:hover { background: #e5f1fb; border-color: #99c4e8; }
+
+        /* Windows 7 "Save changes?" confirmation */
+        .confirm-dialog { width: 380px; }
+
+        .confirm-body {
+            background: #fff;
+            padding: 24px 20px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .confirm-icon {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+
+        .confirm-message {
+            color: #003399;
+            font-size: 15px;
+        }
+
+        .confirm-dialog .dialog-buttons button { min-width: 75px; }
+
+        .dialog-buttons button:focus {
+            outline: none;
+            border-color: #3c7fb1;
+            box-shadow: inset 0 0 0 1px #6cb1f0;
+        }
     </style>
 </head>
 <body>
@@ -329,7 +359,7 @@
             <div class="window-controls">
                 <button title="Minimize"><svg viewBox="0 0 10 10"><path d="M0 9h10v1H0z"/></svg></button>
                 <button title="Maximize"><svg viewBox="0 0 10 10"><path d="M0 0h10v10H0V0zm1 1v8h8V1H1z"/></svg></button>
-                <button class="close-btn" title="Close" onclick="window.close()"><svg viewBox="0 0 10 10"><path d="M1 0l4 4 4-4 1 1-4 4 4 4-1 1-4-4-4 4-1-1 4-4-4-4z"/></svg></button>
+                <button class="close-btn" title="Close" onclick="closeNotepad()"><svg viewBox="0 0 10 10"><path d="M1 0l4 4 4-4 1 1-4 4 4 4-1 1-4-4-4 4-1-1 4-4-4-4z"/></svg></button>
             </div>
         </div>
 
@@ -342,7 +372,7 @@
                     <div class="dropdown-item" onclick="saveFile()">Save <span class="shortcut">Ctrl+S</span></div>
                     <div class="dropdown-item" onclick="saveFileAs()">Save As...</div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" onclick="window.close()">Exit</div>
+                    <div class="dropdown-item" onclick="closeNotepad()">Exit</div>
                 </div>
             </div>
             <div class="menu-item" onclick="toggleMenu(this)">Edit
@@ -375,12 +405,39 @@
         </div>
 
         <div class="status-bar">
-            <div class="autosave-text" id="autosaveStatus">Auto-saved</div>
+            <div class="autosave-text" id="autosaveStatus">Session only</div>
             <div id="statusLine">Ln 1, Col 1</div>
             <div id="charCount">0 characters</div>
             <div>100%</div>
             <!-- The Resize Handle -->
             <div class="resize-handle" id="resizeHandle"></div>
+        </div>
+
+        <!-- Save Changes Dialog (Windows 7 style) -->
+        <div class="dialog-overlay" id="saveConfirmDialog">
+            <div class="dialog confirm-dialog">
+                <div class="dialog-title">Notepad</div>
+                <div class="confirm-body">
+                    <!-- Windows 7 style warning icon -->
+                    <svg class="confirm-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="warnGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0" stop-color="#fff59a"/>
+                                <stop offset="1" stop-color="#f5c400"/>
+                            </linearGradient>
+                        </defs>
+                        <polygon points="16,3.5 29.5,28 2.5,28" fill="url(#warnGrad)" stroke="#8a6d00" stroke-width="2" stroke-linejoin="round"/>
+                        <rect x="14.6" y="11.5" width="2.8" height="9" rx="1.2" fill="#222"/>
+                        <circle cx="16" cy="24" r="1.7" fill="#222"/>
+                    </svg>
+                    <div class="confirm-message">Do you want to save changes to Untitled?</div>
+                </div>
+                <div class="dialog-buttons">
+                    <button id="confirmSaveBtn" onclick="confirmResult('save')">Save</button>
+                    <button onclick="confirmResult('discard')">Don't Save</button>
+                    <button onclick="confirmResult('cancel')">Cancel</button>
+                </div>
+            </div>
         </div>
 
         <!-- Go To Dialog -->
@@ -451,29 +508,89 @@
             document.removeEventListener('mouseup', onMouseUp);
         }
 
-        // --- Auto-Save Logic (localStorage) ---
+        // --- Session-Only Storage (sessionStorage) ---
+        // Text is kept only for the current tab session (survives a refresh),
+        // and is wiped when the tab/window is closed or when the user saves/exits.
         const STORAGE_KEY = 'win7_notepad_content';
         let saveTimeout;
 
         function loadFromStorage() {
-            const savedText = localStorage.getItem(STORAGE_KEY);
-            if (savedText !== null) {
-                textarea.value = savedText;
-                updateStats();
-            }
+            // Remove anything left behind by the old persistent (localStorage) version
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+
+            try {
+                const savedText = sessionStorage.getItem(STORAGE_KEY);
+                if (savedText !== null) {
+                    textarea.value = savedText;
+                    updateStats();
+                }
+            } catch (e) {}
         }
 
         function saveToStorage() {
             autosaveStatus.textContent = "Saving...";
             autosaveStatus.classList.remove('saved');
-            
+
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
-                localStorage.setItem(STORAGE_KEY, textarea.value);
-                autosaveStatus.textContent = "Auto-saved";
+                try { sessionStorage.setItem(STORAGE_KEY, textarea.value); } catch (e) {}
+                autosaveStatus.textContent = "Session only";
                 autosaveStatus.classList.add('saved');
             }, 500);
         }
+
+        // Wipe the text from the screen and from session storage
+        function clearSession() {
+            clearTimeout(saveTimeout);
+            textarea.value = '';
+            try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            autosaveStatus.textContent = "Session only";
+            autosaveStatus.classList.remove('saved');
+            updateTitle('Untitled');
+            updateStats();
+        }
+
+        // --- Windows 7 style "Save changes?" confirmation ---
+        let pendingAction = null; // 'close' or 'new'
+
+        function confirmSaveChanges(action) {
+            // Nothing to lose, so skip the prompt
+            if (textarea.value.trim() === '') {
+                runPendingAction(action);
+                return;
+            }
+            pendingAction = action;
+            document.getElementById('saveConfirmDialog').classList.add('show');
+            document.getElementById('confirmSaveBtn').focus();
+        }
+
+        function runPendingAction(action) {
+            clearSession();
+            if (action === 'close') window.close();
+        }
+
+        function confirmResult(choice) {
+            const action = pendingAction;
+            pendingAction = null;
+            closeDialog('saveConfirmDialog');
+
+            if (choice === 'cancel') {
+                textarea.focus();
+                return;
+            }
+            if (choice === 'save') saveFile(); // also clears the text
+            runPendingAction(action);
+        }
+
+        // Close / Exit
+        function closeNotepad() {
+            confirmSaveChanges('close');
+        }
+
+        // Esc acts like Cancel
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && pendingAction) confirmResult('cancel');
+        });
 
         // --- Text Logic ---
         function updateStats() {
@@ -508,6 +625,9 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
+            // Once saved, the text disappears from the notepad
+            clearSession();
         }
 
         function saveFileAs() {
@@ -523,8 +643,9 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
-            updateTitle(a.download);
+
+            // Once saved, the text disappears from the notepad
+            clearSession();
         }
 
         fileInput.addEventListener('change', (e) => {
@@ -542,23 +663,7 @@
         });
 
         function newFile() {
-            if (textarea.value.trim() !== '') {
-                if (!confirm('Do you want to save changes to Untitled?')) {
-                    textarea.value = '';
-                    localStorage.removeItem(STORAGE_KEY);
-                    autosaveStatus.textContent = "Auto-saved";
-                } else {
-                    saveFile();
-                    textarea.value = '';
-                    localStorage.removeItem(STORAGE_KEY);
-                    autosaveStatus.textContent = "Auto-saved";
-                }
-            } else {
-                textarea.value = '';
-                localStorage.removeItem(STORAGE_KEY);
-            }
-            updateTitle('Untitled');
-            updateStats();
+            confirmSaveChanges('new');
         }
 
         function updateTitle(filename) {
