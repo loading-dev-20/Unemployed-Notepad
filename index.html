@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Unemployed - Notepad</title>
     <!-- Favicon using the custom SVG -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23999' d='M22 6H8v20h16V6z'/%3E%3Cpath fill='%23fff' d='M20 8H10v16h12V8z'/%3E%3Cpath fill='%23000' d='M24 4H10v20h16V4z'/%3E%3Cpath fill='%23fff' d='M22 6H12v16h12V6z'/%3E%3Cpath fill='%23000' d='M26 8H12v20h16V8z'/%3E%3Cpath fill='%23fff' d='M24 10H14v16h12V10z'/%3E%3Cpath fill='%23000' d='M26 8V6h-2v2h2z'/%3E%3Cpath fill='%23999' d='M24 8V6h-2v2h2z'/%3E%3C/svg%3E">
@@ -11,12 +11,15 @@
         * {
             box-sizing: border-box;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             margin: 0;
             padding: 0;
             height: 100vh;
+            height: 100dvh; /* excludes mobile browser toolbars */
             /* Windows 7 Default Desktop Background */
             background: url('https://i.pinimg.com/736x/87/70/88/8770889f041e0a57569ef61a13c2f6f6.jpg') no-repeat center center fixed;
             background-size: cover;
@@ -31,8 +34,11 @@
         .window {
             width: 850px;
             height: 600px;
-            min-width: 400px;
-            min-height: 300px;
+            min-width: min(400px, 100vw);
+            min-height: min(300px, 100vh);
+            max-width: 100vw;
+            max-height: 100vh;
+            max-height: 100dvh;
             background-color: rgba(240, 240, 240, 0.95);
             border: 1px solid #7a7a7a;
             border-radius: 8px 8px 0 0;
@@ -64,6 +70,9 @@
         .title-bar-text {
             display: flex;
             align-items: center;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
             font-size: 12px;
             color: #000;
             font-weight: 500;
@@ -75,6 +84,7 @@
             height: 16px;
             margin-right: 6px;
             image-rendering: pixelated;
+            flex-shrink: 0;
         }
 
         .window-controls {
@@ -176,6 +186,7 @@
             font-size: 14px;
             padding: 5px;
             user-select: text;
+            -webkit-user-select: text;
             white-space: pre;
             overflow: auto;
         }
@@ -200,7 +211,8 @@
             position: relative;
         }
         
-        .status-bar div {
+        .status-bar div:not(.resize-handle) {
+            white-space: nowrap;
             border-left: 1px solid #d9d9d9;
             padding: 0 10px;
             height: 100%;
@@ -226,6 +238,7 @@
             width: 16px;
             height: 16px;
             cursor: nwse-resize;
+            touch-action: none; /* let touch drags resize instead of scrolling */
             z-index: 1000;
             /* Draw the classic Windows diagonal lines */
             background: linear-gradient(135deg, transparent 45%, #a0a0a0 45%, #a0a0a0 55%, transparent 55%),
@@ -250,7 +263,7 @@
             background: #f0f0f0;
             border: 1px solid #7a7a7a;
             box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-            width: 300px;
+            width: min(300px, calc(100% - 24px));
             border-radius: 4px;
             overflow: hidden;
         }
@@ -288,6 +301,7 @@
         .dialog-buttons {
             display: flex;
             justify-content: flex-end;
+            flex-wrap: wrap;
             gap: 8px;
             padding: 10px 15px;
             background: #f0f0f0;
@@ -306,7 +320,7 @@
         .dialog-buttons button:hover { background: #e5f1fb; border-color: #99c4e8; }
 
         /* Windows 7 "Save changes?" confirmation */
-        .confirm-dialog { width: 380px; }
+        .confirm-dialog { width: min(380px, calc(100% - 24px)); }
 
         .confirm-body {
             background: #fff;
@@ -333,6 +347,79 @@
             outline: none;
             border-color: #3c7fb1;
             box-shadow: inset 0 0 0 1px #6cb1f0;
+        }
+
+        /* Save As dialog */
+        .saveas-dialog { width: min(380px, calc(100% - 24px)); }
+        .saveas-dialog .dialog-row { margin-bottom: 10px; }
+        .saveas-dialog .dialog-row label { width: 85px; flex-shrink: 0; }
+        .dialog-row input {
+            min-width: 0;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+        .dialog-row input:disabled { background: #f0f0f0; color: #555; }
+
+        /* ===== Responsive layout ===== */
+
+        /* Large screens: a roomier default window */
+        @media (min-width: 1600px) and (min-height: 900px) {
+            .window { width: 1000px; height: 700px; }
+        }
+
+        /* Phones and small windows: the notepad fills the whole screen */
+        @media (max-width: 700px), (max-height: 520px) {
+            .window {
+                width: 100% !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+                max-width: none;
+                max-height: none;
+                top: 0;
+                left: 0;
+                transform: none;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .title-bar { border-radius: 0; }
+            .resize-handle { display: none; }
+            .dropdown { min-width: 160px; }
+            .status-bar {
+                height: calc(22px + env(safe-area-inset-bottom));
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+
+        /* Narrow phones: keep menus on screen and the status bar readable */
+        @media (max-width: 480px) {
+            .menu-item { position: static; }
+            .dropdown { left: 0; top: 100%; }
+            .status-bar div.autosave-text,
+            .status-bar div:nth-child(4) { display: none; }
+        }
+
+        /* Touch screens: bigger tap targets, no keyboard hints, no iOS focus-zoom */
+        @media (pointer: coarse) {
+            .title-bar { height: 40px; }
+            .title-bar-text { font-size: 13px; }
+            .window-controls button { width: 52px; }
+            .window-controls svg { width: 12px; height: 12px; }
+            .menu-bar { height: 40px; font-size: 14px; }
+            .menu-item { padding: 8px 12px; }
+            .dropdown { top: 100%; min-width: 190px; font-size: 14px; }
+            .dropdown-item { padding: 11px 20px; }
+            .shortcut { display: none; }
+            textarea { font-size: 16px; padding: 8px; }
+            .status-bar {
+                height: calc(30px + env(safe-area-inset-bottom));
+                font-size: 13px;
+            }
+            .resize-handle { width: 26px; height: 26px; }
+            .dialog-title { height: 32px; font-size: 13px; }
+            .dialog-content { font-size: 14px; }
+            .dialog-row input { font-size: 16px; padding: 6px; }
+            .dialog-buttons button { font-size: 14px; padding: 9px 16px; }
         }
     </style>
 </head>
@@ -430,12 +517,33 @@
                         <rect x="14.6" y="11.5" width="2.8" height="9" rx="1.2" fill="#222"/>
                         <circle cx="16" cy="24" r="1.7" fill="#222"/>
                     </svg>
-                    <div class="confirm-message">Do you want to save changes to Untitled?</div>
+                    <div class="confirm-message" id="confirmMessage">Do you want to save the changes to Untitled?</div>
                 </div>
                 <div class="dialog-buttons">
                     <button id="confirmSaveBtn" onclick="confirmResult('save')">Save</button>
                     <button onclick="confirmResult('discard')">Don't Save</button>
                     <button onclick="confirmResult('cancel')">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save As Dialog (opened by Save on an untitled file, like Word) -->
+        <div class="dialog-overlay" id="saveAsDialog">
+            <div class="dialog saveas-dialog">
+                <div class="dialog-title">Save As</div>
+                <div class="dialog-content">
+                    <div class="dialog-row">
+                        <label for="saveAsName">File name:</label>
+                        <input type="text" id="saveAsName" value="Untitled.txt" spellcheck="false" autocomplete="off">
+                    </div>
+                    <div class="dialog-row">
+                        <label for="saveAsType">Save as type:</label>
+                        <input type="text" id="saveAsType" value="Text Documents (*.txt)" disabled>
+                    </div>
+                </div>
+                <div class="dialog-buttons">
+                    <button onclick="confirmSaveAs()">Save</button>
+                    <button onclick="cancelSaveAs()">Cancel</button>
                 </div>
             </div>
         </div>
@@ -470,49 +578,57 @@
         const resizeHandle = document.getElementById('resizeHandle');
         let isWordWrap = false;
 
-        // --- Scaling / Resize Logic ---
+        // --- Scaling / Resize Logic (mouse, touch and pen) ---
         let isResizing = false;
         let startWidth, startHeight, startX, startY;
 
-        resizeHandle.addEventListener('mousedown', (e) => {
+        resizeHandle.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             isResizing = true;
             startX = e.clientX;
             startY = e.clientY;
             startWidth = windowEl.offsetWidth;
             startHeight = windowEl.offsetHeight;
-            
-            // Add event listeners to the whole document to handle fast mouse movement
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+
+            // Keep receiving moves even if the pointer leaves the handle
+            resizeHandle.setPointerCapture(e.pointerId);
         });
 
-        function onMouseMove(e) {
+        resizeHandle.addEventListener('pointermove', (e) => {
             if (!isResizing) return;
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            // Calculate new dimensions, enforcing minimums
-            const newWidth = Math.max(400, startWidth + dx);
-            const newHeight = Math.max(300, startHeight + dy);
-            
-            // Apply new dimensions
+
+            // The window is centered, so it grows on both sides: double the
+            // movement so the grip stays under the pointer
+            const dx = (e.clientX - startX) * 2;
+            const dy = (e.clientY - startY) * 2;
+
+            // Enforce minimums (smaller on tiny screens) and never exceed the viewport
+            const minW = Math.min(400, window.innerWidth);
+            const minH = Math.min(300, window.innerHeight);
+            const newWidth = Math.min(window.innerWidth, Math.max(minW, startWidth + dx));
+            const newHeight = Math.min(window.innerHeight, Math.max(minH, startHeight + dy));
+
             windowEl.style.width = `${newWidth}px`;
             windowEl.style.height = `${newHeight}px`;
+        });
+
+        function stopResize(e) {
+            isResizing = false;
+            try { resizeHandle.releasePointerCapture(e.pointerId); } catch (err) {}
         }
 
-        function onMouseUp() {
-            isResizing = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        }
+        resizeHandle.addEventListener('pointerup', stopResize);
+        resizeHandle.addEventListener('pointercancel', stopResize);
+
+        // Small screens: wrap long lines by default so text never runs off the edge
+        if (window.matchMedia('(max-width: 700px)').matches) toggleWordWrap();
 
         // --- Session-Only Storage (sessionStorage) ---
         // Text is kept only for the current tab session (survives a refresh),
         // and is wiped when the tab/window is closed or when the user saves/exits.
         const STORAGE_KEY = 'win7_notepad_content';
         let saveTimeout;
+        let currentFileName = null; // set when a file is opened; cleared when the notepad is wiped
 
         function loadFromStorage() {
             // Remove anything left behind by the old persistent (localStorage) version
@@ -546,6 +662,7 @@
             try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
             autosaveStatus.textContent = "Session only";
             autosaveStatus.classList.remove('saved');
+            currentFileName = null;
             updateTitle('Untitled');
             updateStats();
         }
@@ -560,6 +677,8 @@
                 return;
             }
             pendingAction = action;
+            document.getElementById('confirmMessage').textContent =
+                `Do you want to save the changes to ${currentFileName || 'Untitled'}?`;
             document.getElementById('saveConfirmDialog').classList.add('show');
             document.getElementById('confirmSaveBtn').focus();
         }
@@ -578,7 +697,22 @@
                 textarea.focus();
                 return;
             }
-            if (choice === 'save') saveFile(); // also clears the text
+            if (choice === 'save') {
+                // Like Word: Save asks for a file name first (Save As). If that is
+                // cancelled we stay in the document and nothing gets closed.
+                saveFile(() => runPendingAction(action));
+                return;
+            }
+
+            // Don't Save on close/exit: the text stays exactly as it is. The tab
+            // only closes if the browser allows it (closing it discards the session).
+            if (action === 'close') {
+                window.close();
+                textarea.focus();
+                return;
+            }
+
+            // Don't Save on New: start a blank notepad
             runPendingAction(action);
         }
 
@@ -587,9 +721,11 @@
             confirmSaveChanges('close');
         }
 
-        // Esc acts like Cancel
+        // Esc acts like Cancel on whichever dialog is open
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && pendingAction) confirmResult('cancel');
+            if (e.key !== 'Escape') return;
+            if (document.getElementById('saveAsDialog').classList.contains('show')) cancelSaveAs();
+            else if (pendingAction) confirmResult('cancel');
         });
 
         // --- Text Logic ---
@@ -615,38 +751,77 @@
         window.addEventListener('DOMContentLoaded', loadFromStorage);
 
         // --- File Operations ---
-        function saveFile() {
+        // Download the text as a .txt file
+        function downloadText(name) {
             const blob = new Blob([textarea.value], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Untitled.txt';
+            a.download = name;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
 
-            // Once saved, the text disappears from the notepad
-            clearSession();
+        // Save: a named file saves straight away; an untitled one asks for a
+        // name first, exactly like Word. `afterSave` runs once the file is saved.
+        function saveFile(afterSave) {
+            if (typeof afterSave !== 'function') afterSave = null;
+
+            if (currentFileName) {
+                downloadText(currentFileName);
+                clearSession(); // once saved, the text disappears
+                if (afterSave) afterSave();
+            } else {
+                showSaveAs(afterSave);
+            }
         }
 
         function saveFileAs() {
-            const newName = prompt('Enter file name:', 'Untitled.txt');
-            if (!newName) return;
-            
-            const blob = new Blob([textarea.value], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = newName.endsWith('.txt') ? newName : newName + '.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            // Once saved, the text disappears from the notepad
-            clearSession();
+            showSaveAs(null);
         }
+
+        // --- Save As dialog ---
+        let afterSaveAction = null;
+        const saveAsInput = document.getElementById('saveAsName');
+
+        function showSaveAs(afterSave) {
+            afterSaveAction = afterSave || null;
+            saveAsInput.value = currentFileName || 'Untitled.txt';
+            document.getElementById('saveAsDialog').classList.add('show');
+            saveAsInput.focus();
+            // Select the name but not the .txt extension
+            saveAsInput.setSelectionRange(0, saveAsInput.value.replace(/\.txt$/i, '').length);
+        }
+
+        function confirmSaveAs() {
+            // Windows file names can't contain these characters
+            let name = saveAsInput.value.trim().replace(/[\\\/:*?"<>|]/g, '');
+            if (name === '' || name.toLowerCase() === '.txt') {
+                saveAsInput.focus();
+                return;
+            }
+            if (!/\.txt$/i.test(name)) name += '.txt';
+
+            const after = afterSaveAction;
+            afterSaveAction = null;
+            closeDialog('saveAsDialog');
+            downloadText(name);
+            clearSession(); // once saved, the text disappears
+            if (after) after();
+        }
+
+        // Cancel: back to the document; whatever was pending (close / new) is dropped
+        function cancelSaveAs() {
+            afterSaveAction = null;
+            closeDialog('saveAsDialog');
+            textarea.focus();
+        }
+
+        saveAsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') confirmSaveAs();
+        });
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -657,6 +832,7 @@
                 updateStats();
                 saveToStorage();
                 updateTitle(file.name);
+                currentFileName = file.name;
             };
             reader.readAsText(file);
             fileInput.value = '';
